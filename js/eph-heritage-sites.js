@@ -213,7 +213,7 @@ function populateProvinceTypesData() {
   let kurungBuka = '';
   let kurungTutup = '';
   
-  const klasterKhususNasional = ['Kabupaten & kota', 'Gempa bumi dan tsunami', 'Peristiwa lainnya', 'Publikasi', 'Lukisan'];
+  const klasterKhususNasional = ['Kabupaten dan kota', 'Gempa bumi dan tsunami', 'Peristiwa lainnya', 'Publikasi', 'Lukisan'];
   let isKhususNasional = klasterKhususNasional.includes(currentNamaKlaster);
   let filterNasional = '?s wdt:P17 wd:Q252 .';
   
@@ -1201,7 +1201,7 @@ function generateRecordDetails(qid) {
   let showTahun = true; 
   let prefixTahun = 'Didirikan';
 
-  if (['Kabupaten & kota'].includes(currentNamaKlaster)) {
+  if (['Kabupaten dan kota'].includes(currentNamaKlaster)) {
     prefixLokasi = 'Provinsi';
     prefixTahun = 'Hari jadi';
   } else if (['Tempat lahir tokoh'].includes(currentNamaKlaster)) {
