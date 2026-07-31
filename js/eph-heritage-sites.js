@@ -810,6 +810,7 @@ function populateProvinceIndexNodes() {
 
 var currentRegionFilter = 'all';
 var currentUsiaFilter = 'all';
+var currentUsiaSort = 'default'; 
 var activeFeatures = new Set(); 
 var currentSearchQuery = '';
 var userLocation = null;
@@ -821,8 +822,23 @@ function generateFilterSelect() {
   activeFeatures.clear();
   currentSearchQuery = '';
 
-  let selectKombinasi = document.getElementById('filter-sort-kombinasi');
+let selectKombinasi = document.getElementById('filter-sort-kombinasi');
   if (selectKombinasi) {
+    // 1. GENERATE OPSI HTML DARI JS
+    selectKombinasi.innerHTML = `
+      <option value="default">Semua Usia</option>
+      <option value="sort-termuda">↓ Urutkan: Termuda Dulu</option>
+      <option value="sort-tertua">↑ Urutkan: Tertua Dulu</option>
+      <option disabled>──────────</option>
+      <option value="filter-muda-50">&lt; 50 Tahun</option>
+      <option value="filter-tua-50">&gt; 50 Tahun</option>
+      <option value="filter-muda-100">&lt; 100 Tahun</option>
+      <option value="filter-tua-100">&gt; 100 Tahun</option>
+      <option value="filter-tua-200">&gt; 200 Tahun</option>
+      <option value="filter-tua-300">&gt; 300 Tahun</option>
+      <option value="filter-tua-400">&gt; 400 Tahun</option>
+      <option value="filter-tua-500">&gt; 500 Tahun</option>
+    `;
     selectKombinasi.value = 'default';
     
     if (currentKategoriUtama === 'alam') {
@@ -830,8 +846,27 @@ function generateFilterSelect() {
     } else {
       selectKombinasi.classList.remove('d-none'); 
     }
-  }
 
+// 2. LOGIKA KETIKA DROPDOWN BERUBAH
+    selectKombinasi.addEventListener('change', function() {
+      let pilihan = this.value;
+      currentUsiaFilter = 'all'; 
+      currentUsiaSort = 'default'; 
+
+      if (pilihan.startsWith('sort-')) {
+        // Jika pengguna memilih "Urutkan" (termuda/tertua)
+        currentUsiaSort = pilihan.replace('sort-', ''); 
+      } 
+      else if (pilihan.startsWith('filter-')) {
+        // Jika pengguna memilih "Filter" (angka tahun)
+        currentUsiaFilter = pilihan.replace('filter-', ''); // Menjadi muda-50, tua-100, dll
+        currentUsiaSort = 'tertua'; // Otomatis urutkan dari yang paling tua jika masuk mode filter
+      }
+      
+      applyIntersectionFilter();
+    });
+  }
+    
   let searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.value = '';
 
@@ -919,6 +954,7 @@ function generateFilterSelect() {
         if (selectRegion) selectRegion.value = 'all';
 
         currentUsiaFilter = 'all';
+        currentUsiaSort = 'default'; // INI YANG TERLEWAT
         if (selectKombinasi) selectKombinasi.value = 'default';
 
         currentSearchQuery = '';
@@ -1044,39 +1080,49 @@ if (Map) Map.stop();
       }
     }
 
-  let matchUsia = true;
-if (currentUsiaFilter !== 'all') {                 
-  if (record.rawTahunBerdiri) {
-    let tahunBangunan = parseInt(record.rawTahunBerdiri.substring(0, 4));
-    let [tipeFilter, umurStr] = currentUsiaFilter.split('_');
-    let batasUmur = parseInt(umurStr);
-    let batasTahun = new Date().getFullYear() - batasUmur;
+let matchUsia = true;
+  if (currentUsiaFilter !== 'all') {                 
+    if (record.rawTahunBerdiri) {
+      let tahunBangunan = parseInt(record.rawTahunBerdiri.substring(0, 4));
+      
+      let parts = currentUsiaFilter.split('-');
+      let tipeFilter = parts[0]; 
+      let batasUmur = parseInt(parts[1]);
+      let batasTahun = new Date().getFullYear() - batasUmur;
 
-    if (tipeFilter === 'muda') {
-      matchUsia = tahunBangunan > batasTahun;      
+      if (tipeFilter === 'muda') {
+        matchUsia = tahunBangunan > batasTahun;      
+      } else if (tipeFilter === 'tua') {
+        matchUsia = tahunBangunan <= batasTahun;     
+      }
     } else {
-      matchUsia = tahunBangunan <= batasTahun;     
+      matchUsia = false; 
     }
-  } else {
-    matchUsia = false; 
   }
-}
     
     return matchRegion && matchFeature && matchSearch && matchUsia;
 
-  }).sort((a, b) => {
-    if (currentUsiaFilter !== 'all') {
+}).sort((a, b) => {
+    // JIKA ADA FILTER USIA AKTIF ATAU URUTKAN AKTIF
+    if (currentUsiaFilter !== 'all' || currentUsiaSort !== 'default') {
       let aHasYear = !!a.rawTahunBerdiri;
       let bHasYear = !!b.rawTahunBerdiri;
 
       if (aHasYear && bHasYear) {
-        return a.rawTahunBerdiri.localeCompare(b.rawTahunBerdiri);
+        if (currentUsiaSort === 'termuda') {
+          // Termuda dulu: Tahun besar (2020) di atas Tahun kecil (1900)
+          return b.rawTahunBerdiri.localeCompare(a.rawTahunBerdiri); 
+        } else {
+          // Tertua dulu (default jika filter aktif): Tahun kecil (1900) di atas Tahun besar (2020)
+          return a.rawTahunBerdiri.localeCompare(b.rawTahunBerdiri);
+        }
       } else if (aHasYear && !bHasYear) {
         return -1; 
       } else if (!aHasYear && bHasYear) {
         return 1;  
       }
     }
+    
     return a.indexTitle.localeCompare(b.indexTitle);    
   });
 
