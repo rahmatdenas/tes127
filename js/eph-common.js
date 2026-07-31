@@ -14,6 +14,9 @@ const MIN_PH_LAT              =   6.0;
 const MAX_PH_LAT              = -11.0;   
 const MIN_PH_LON              =  95.0;   
 const MAX_PH_LON              = 141.0;   
+const WIKI_HEADERS = {
+    'Api-User-Agent': 'WikiJelajah/1.0 (Kontak: emailanda@gmail.com)' // Ganti dengan email Anda
+};
 
 var currentKategoriUtama = 'general';
 var Records = {};        
@@ -438,6 +441,11 @@ Cluster.on('clusterclick', function (a) {
 }
 
 function queryWdqsThenProcess(query, processEachResult, postprocessCallback, signal = null) {
+  // SUNTIKAN 1: Otomatis gunakan sakelar pusat (Total Kill) jika tidak ada sinyal yang dikirim
+  if (!signal && typeof globalFetchController !== 'undefined') {
+    signal = globalFetchController.signal;
+  }
+
   let promise = new Promise((resolve, reject) => {
     let xhr = new XMLHttpRequest();
     
@@ -465,6 +473,15 @@ function queryWdqsThenProcess(query, processEachResult, postprocessCallback, sig
     xhr.open('POST', WDQS_API_URL, true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('Accept', 'application/sparql-results+json');
+    
+    // SUNTIKAN 2: Header Identitas agar tidak diblokir Wikidata
+xhr.setRequestHeader('Api-User-Agent', WIKI_HEADERS['Api-User-Agent']);
+    xhr.timeout = 15000; 
+
+    // TAMBAHKAN INI: Beri tahu XHR apa yang harus dilakukan jika waktu habis
+    xhr.ontimeout = function () {
+      reject('TIMEOUT');
+    };
     
     if (SparqlValuesClause) query = query.replace('<SPARQLVALUESCLAUSE>', SparqlValuesClause);
     xhr.send('format=json&query=' + encodeURIComponent(query));
@@ -848,14 +865,6 @@ function displayRecordDetails(qid) {
     detailsElem.innerHTML = ''; 
     detailsElem.appendChild(record.panelElem);
 
-    let stuckImages = record.panelElem.querySelectorAll('img.loading');
-    stuckImages.forEach(img => {
-      if (!img.complete || img.naturalWidth === 0) {
-        let currentSrc = img.src;
-        img.src = ''; 
-        img.src = currentSrc; 
-      }
-    });
     let stuckCaptions = record.panelElem.querySelectorAll('figcaption');
     stuckCaptions.forEach(caption => {
       if (caption.textContent.includes('(Memuat…)')) {
@@ -1054,11 +1063,16 @@ function tarikMetadataCaption(filename, targetId, targetNode = null) {
   };
   Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-  let fetchOptions = {};
-  if (!targetNode && typeof globalFetchController !== 'undefined') {
-    fetchOptions.signal = globalFetchController.signal;
-  }
-
+let fetchOptions = {
+  headers: WIKI_HEADERS,
+  // AbortSignal.any akan membatalkan fetch jika:
+  // 1. Aplikasi di-reset (globalFetchController.signal), ATAU
+  // 2. Waktu habis setelah 15.000 milidetik (AbortSignal.timeout)
+  signal: AbortSignal.any([
+    globalFetchController.signal,
+    AbortSignal.timeout(15000)
+  ])
+};
   fetch(url, fetchOptions)
     .then(res => res.ok ? res.json() : Promise.reject())
     .then(data => {
