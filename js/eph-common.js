@@ -440,7 +440,7 @@ Cluster.on('clusterclick', function (a) {
 });
 }
 	
-function queryWdqsThenProcess(query, processCallback, signal = null, timeoutCallback = null, timeoutMs = 15000) {
+function queryWdqsThenProcess(query, processCallback, postprocessCallback = null, signal = null, timeoutMs = 15000) {
   // SUNTIKAN 1: Otomatis gunakan sakelar pusat (Total Kill) jika tidak ada sinyal yang dikirim
   if (!signal && typeof globalFetchController !== 'undefined') {
     signal = globalFetchController.signal;
@@ -483,7 +483,6 @@ function queryWdqsThenProcess(query, processCallback, signal = null, timeoutCall
     xhr.timeout = timeoutMs; 
 
     xhr.ontimeout = function () {
-      if (timeoutCallback) timeoutCallback();
       reject('TIMEOUT');
     };
     
@@ -494,12 +493,13 @@ function queryWdqsThenProcess(query, processCallback, signal = null, timeoutCall
     xhr.send('format=json&query=' + encodeURIComponent(query));
   });
 
-  // PENYELESAIAN: Langsung gunakan nama 'processCallback' dari parameter di atas
-  // postprocessCallback yang tidak terpakai sudah dihapus agar bersih
+  // PENYELESAIAN: Eksekusi processCallback lalu lanjutkan ke postprocessCallback (render panel)
   promise = promise.then(data => {
     if (data && data.results && data.results.bindings) {
       data.results.bindings.forEach(processCallback); 
     }
+    // WAJIB ADA: Memicu proses render HTML setelah data selesai diproses
+    if (postprocessCallback) postprocessCallback();
   });
 
   return promise;
