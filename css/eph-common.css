@@ -401,7 +401,6 @@ optgroup option { padding-left: 10px; }
   overflow-y: auto;
   margin: 0;
   padding: 0;
-  background: #f3e9e9;
 }
 #index-list li { margin: 0; padding: 0; -webkit-touch-callout: none; }
 #index-list li:hover { background: #eaa; box-shadow: 0 -1px #eaa; }
