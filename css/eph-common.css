@@ -416,7 +416,9 @@ optgroup option { padding-left: 10px; }
   text-decoration: none;
   color: #000;
 }
-#index-list li:last-child a { border-bottom: none; }
+#index-list:not(.mode-galeri) li:last-child a { 
+  border-bottom: none; 
+}
 
 /* ==========================================================================
    7. PANEL DETAIL BANGUNAN
