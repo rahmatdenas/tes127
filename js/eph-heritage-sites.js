@@ -827,9 +827,6 @@ let selectKombinasi = document.getElementById('filter-sort-kombinasi');
     // 1. GENERATE OPSI HTML DARI JS
     selectKombinasi.innerHTML = `
       <option value="default">Semua Usia</option>
-      <option value="sort-termuda">↓ Urutkan: Termuda Dulu</option>
-      <option value="sort-tertua">↑ Urutkan: Tertua Dulu</option>
-      <option disabled>──────────</option>
       <option value="filter-muda-50">&lt; 50 Tahun</option>
       <option value="filter-tua-50">&gt; 50 Tahun</option>
       <option value="filter-muda-100">&lt; 100 Tahun</option>
@@ -838,6 +835,8 @@ let selectKombinasi = document.getElementById('filter-sort-kombinasi');
       <option value="filter-tua-300">&gt; 300 Tahun</option>
       <option value="filter-tua-400">&gt; 400 Tahun</option>
       <option value="filter-tua-500">&gt; 500 Tahun</option>
+      <option value="sort-termuda">Terbaru dulu</option>
+      <option value="sort-tertua">Tertua dulu</option>
     `;
     selectKombinasi.value = 'default';
     
@@ -857,10 +856,15 @@ let selectKombinasi = document.getElementById('filter-sort-kombinasi');
         // Jika pengguna memilih "Urutkan" (termuda/tertua)
         currentUsiaSort = pilihan.replace('sort-', ''); 
       } 
-      else if (pilihan.startsWith('filter-')) {
-        // Jika pengguna memilih "Filter" (angka tahun)
-        currentUsiaFilter = pilihan.replace('filter-', ''); // Menjadi muda-50, tua-100, dll
-        currentUsiaSort = 'tertua'; // Otomatis urutkan dari yang paling tua jika masuk mode filter
+else if (pilihan.startsWith('filter-')) {
+        currentUsiaFilter = pilihan.replace('filter-', ''); 
+        
+        // Cek apakah pengguna memilih filter "<" (muda) atau ">" (tua)
+        if (pilihan.includes('muda')) {
+          currentUsiaSort = 'termuda'; // Jika < 50 atau < 100, urutkan dari yang paling muda dulu
+        } else {
+          currentUsiaSort = 'tertua';  // Jika > 50, > 100 dst, urutkan dari yang paling kuno/tua dulu
+        }
       }
       
       applyIntersectionFilter();
