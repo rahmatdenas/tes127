@@ -476,9 +476,9 @@ function queryWdqsThenProcess(query, processEachResult, postprocessCallback, sig
     
     // SUNTIKAN 2: Header Identitas agar tidak diblokir Wikidata
 xhr.setRequestHeader('Api-User-Agent', WIKI_HEADERS['Api-User-Agent']);
-    xhr.timeout = 15000; 
+// INI KUNCI SOLUSINYA: Gunakan parameter dinamis
+    xhr.timeout = timeoutMs; 
 
-    // TAMBAHKAN INI: Beri tahu XHR apa yang harus dilakukan jika waktu habis
     xhr.ontimeout = function () {
       reject('TIMEOUT');
     };
