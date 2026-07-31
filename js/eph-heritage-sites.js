@@ -334,7 +334,7 @@ async function populateCoordinatesData() {
         let wktBits = result.coord.value.split(/\(|\)| /);
         record.lat = parseFloat(wktBits[2]);
         record.lon = parseFloat(wktBits[1]);
-      });
+}, null, null, 0);
     });
 
     try {
@@ -395,7 +395,7 @@ async function populateImageAndWikipediaData() {
         let rawArt = result.wikipediaUrlTitle.value;
         record.articleTitle = decodeURIComponent(rawArt.substring(rawArt.lastIndexOf('/') + 1));
       }
-    }, null, signal);
+}, null, signal, 0);
   };
 
   const evaluasiHasilKloter = (hasilKloter) => {
@@ -515,7 +515,9 @@ function populateImportantEventsData(qid) {
     },
     function() {
       populateStatusAndCapacityData(qid); 
-    }
+},
+    null,    // <-- signal
+    15000    // <-- PERUBAHAN DI SINI: timeout 15 detik
   ).catch(error => {
     console.warn("Gagal menarik data peristiwa historis (offline).", error);
     record._gagalOffline = true;
@@ -540,7 +542,9 @@ function populateStatusAndCapacityData(qid) {
     },
     function() {
       renderDynamicDataInPanel(qid); 
-    }
+},
+    null,    // <-- signal
+    15000    // <-- PERUBAHAN DI SINI: timeout 15 detik
   ).catch(error => {
     console.warn("Gagal menarik data kapasitas/status (offline).", error);
     record._gagalOffline = true;
@@ -1271,7 +1275,9 @@ function populateHistoricalImagesData(qid) {
     },
     function() {
       renderHistoricalImagesInPanel(qid);
-    }
+},
+    null,    // <-- signal
+    15000    // <-- PERUBAHAN DI SINI: timeout 15 detik
     ).catch(error => {
     console.warn("Gagal menarik foto arsip (offline).", error);
     let record = Records[qid];
