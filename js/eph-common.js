@@ -439,8 +439,8 @@ Cluster.on('clusterclick', function (a) {
   }
 });
 }
-
-function queryWdqsThenProcess(query, processEachResult, postprocessCallback, signal = null) {
+	
+function queryWdqsThenProcess(query, processCallback, signal = null, timeoutCallback = null, timeoutMs = 15000) {
   // SUNTIKAN 1: Otomatis gunakan sakelar pusat (Total Kill) jika tidak ada sinyal yang dikirim
   if (!signal && typeof globalFetchController !== 'undefined') {
     signal = globalFetchController.signal;
@@ -475,22 +475,33 @@ function queryWdqsThenProcess(query, processEachResult, postprocessCallback, sig
     xhr.setRequestHeader('Accept', 'application/sparql-results+json');
     
     // SUNTIKAN 2: Header Identitas agar tidak diblokir Wikidata
-xhr.setRequestHeader('Api-User-Agent', WIKI_HEADERS['Api-User-Agent']);
-// INI KUNCI SOLUSINYA: Gunakan parameter dinamis
+    if (typeof WIKI_HEADERS !== 'undefined' && WIKI_HEADERS['Api-User-Agent']) {
+      xhr.setRequestHeader('Api-User-Agent', WIKI_HEADERS['Api-User-Agent']);
+    }
+
+    // INI KUNCI SOLUSINYA: Gunakan parameter dinamis (0 = tanpa batas)
     xhr.timeout = timeoutMs; 
 
     xhr.ontimeout = function () {
+      if (timeoutCallback) timeoutCallback();
       reject('TIMEOUT');
     };
     
-    if (SparqlValuesClause) query = query.replace('<SPARQLVALUESCLAUSE>', SparqlValuesClause);
+    if (typeof SparqlValuesClause !== 'undefined' && SparqlValuesClause) {
+      query = query.replace('<SPARQLVALUESCLAUSE>', SparqlValuesClause);
+    }
+    
     xhr.send('format=json&query=' + encodeURIComponent(query));
   });
 
+  // PENYELESAIAN: Langsung gunakan nama 'processCallback' dari parameter di atas
+  // postprocessCallback yang tidak terpakai sudah dihapus agar bersih
   promise = promise.then(data => {
-    data.results.bindings.forEach(processEachResult);
+    if (data && data.results && data.results.bindings) {
+      data.results.bindings.forEach(processCallback); 
+    }
   });
-  if (postprocessCallback) promise = promise.then(postprocessCallback);
+
   return promise;
 }
 
