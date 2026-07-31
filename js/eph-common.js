@@ -15,7 +15,7 @@ const MAX_PH_LAT              = -11.0;
 const MIN_PH_LON              =  95.0;   
 const MAX_PH_LON              = 141.0;   
 const WIKI_HEADERS = {
-    'Api-User-Agent': 'WikiJelajah/1.0 (Kontak: emailanda@gmail.com)' // Ganti dengan email Anda
+    'Api-User-Agent': 'WikiJelajah/1.0 (Kontak: rahmatdenas@gmail.com)' 
 };
 
 var currentKategoriUtama = 'general';
