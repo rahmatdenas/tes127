@@ -261,7 +261,7 @@ let whereClause = `
   }
 
   // 3. KONDISI KHUSUS PER KLASTER
-if (klaster === 'Kabupaten & kota') {
+if (klaster === 'Kabupaten dan kota') {
     selectClause += `(SAMPLE(?popData) AS ?populasi) (SAMPLE(?govData) AS ?kepalaDaerah) (SAMPLE(?webVal) AS ?lamanResmi) `;
     whereClause += `
       OPTIONAL { ?site wdt:P856 ?webVal . }
