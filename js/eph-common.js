@@ -441,8 +441,57 @@ Cluster.on('clusterclick', function (a) {
 }
 	
 function queryWdqsThenProcess(query, processEachResult, postprocessCallback = null, signal = null, timeoutMs = 15000) {
-  // ... (kode di dalamnya tetap sama seperti perbaikan sebelumnya) ...
-  
+// SUNTIKAN 1: Otomatis gunakan sakelar pusat (Total Kill) jika tidak ada sinyal yang dikirim
+  if (!signal && typeof globalFetchController !== 'undefined') {
+    signal = globalFetchController.signal;
+  }
+
+  let promise = new Promise((resolve, reject) => {
+    let xhr = new XMLHttpRequest();
+    
+    if (signal) {
+      if (signal.aborted) return reject('ABORTED');
+      
+      signal.addEventListener('abort', () => {
+        xhr.abort();
+        reject('ABORTED');
+      });
+    }
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== xhr.DONE) return;
+
+      if (xhr.status === 200) {
+        resolve(JSON.parse(xhr.responseText));
+      } else if (xhr.status === 0) {
+        reject((signal && signal.aborted) ? 'ABORTED' : 'NETWORK_ERROR');
+      } else {
+        reject(xhr.status);
+      }
+    };
+    
+    xhr.open('POST', WDQS_API_URL, true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('Accept', 'application/sparql-results+json');
+    
+    // SUNTIKAN 2: Header Identitas agar tidak diblokir Wikidata
+    if (typeof WIKI_HEADERS !== 'undefined' && WIKI_HEADERS['Api-User-Agent']) {
+      xhr.setRequestHeader('Api-User-Agent', WIKI_HEADERS['Api-User-Agent']);
+    }
+
+    // INI KUNCI SOLUSINYA: Gunakan parameter dinamis (0 = tanpa batas)
+    xhr.timeout = timeoutMs; 
+
+    xhr.ontimeout = function () {
+      reject('TIMEOUT');
+    };
+    
+    if (typeof SparqlValuesClause !== 'undefined' && SparqlValuesClause) {
+      query = query.replace('<SPARQLVALUESCLAUSE>', SparqlValuesClause);
+    }
+    
+    xhr.send('format=json&query=' + encodeURIComponent(query));
+  });  
   promise = promise.then(data => {
     if (data && data.results && data.results.bindings) {
       data.results.bindings.forEach(processEachResult); 
